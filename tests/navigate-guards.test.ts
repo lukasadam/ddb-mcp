@@ -16,7 +16,7 @@ interface FakeOpts {
 
 function makeFake(opts: FakeOpts = {}) {
   let currentUrl = opts.url ?? "about:blank";
-  const calls = { goto: [] as string[], routes: 0, clicked: 0, filled: [] as string[] };
+  const calls = { goto: [] as string[], routes: 0, clicked: 0, filled: [] as string[], evaluatedWith: [] as unknown[] };
 
   const locator = {
     filter: () => locator,
@@ -32,7 +32,10 @@ function makeFake(opts: FakeOpts = {}) {
   const page = {
     url: () => currentUrl,
     goto: async (u: string) => { calls.goto.push(u); currentUrl = u; },
-    evaluate: async () => opts.content ?? "",
+    evaluate: async (_callback: unknown, argument: unknown) => {
+      calls.evaluatedWith.push(argument);
+      return opts.content ?? "";
+    },
     waitForTimeout: async () => {},
     locator: () => locator,
   };
@@ -102,6 +105,17 @@ describe("getCurrentPageContent() scrape refusal", () => {
     expect(out).toContain("Current URL: https://www.dndbeyond.com/characters/1");
     expect(out).toContain("<untrusted_dndbeyond_content>");
     expect(out).toContain("Sheet text");
+  });
+
+  it("requests the controls view and wraps its output as untrusted", async () => {
+    const control = '{"tag":"button","role":"combobox","label":"Strength","selector":"#strength"}';
+    const { context, calls } = makeFake({
+      url: "https://www.dndbeyond.com/characters/1",
+      content: control,
+    });
+    const out = await getCurrentPageContent(context, true);
+    expect(calls.evaluatedWith).toEqual([true]);
+    expect(out).toContain(`<untrusted_dndbeyond_content>\n${control}\n</untrusted_dndbeyond_content>`);
   });
 });
 

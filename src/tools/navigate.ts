@@ -185,7 +185,7 @@ export async function interact(
   }
 }
 
-export async function getCurrentPageContent(context: BrowserContext): Promise<string> {
+export async function getCurrentPageContent(context: BrowserContext, controls = false): Promise<string> {
   const snapshot = captureSession();
   const page = await getPage(context);
   await ensureNavigationGuard(context);
@@ -202,11 +202,39 @@ export async function getCurrentPageContent(context: BrowserContext): Promise<st
       `Use ddb_navigate to load a D&D Beyond page.`
     );
   }
-  const content = await page.evaluate(() => {
+  const content = await page.evaluate((readControls) => {
+    if (readControls) {
+      const selector = 'button, summary, select, textarea, input:not([type="hidden"]):not([type="password"]), [role="combobox"], [role="option"], [role="menuitem"], [role="radio"], [role="checkbox"], [role="tab"]';
+      const main = document.querySelector("main, article, .main-content, .page-content");
+      return Array.from(document.querySelectorAll<HTMLElement>(selector))
+        .filter(el => (!main || main.contains(el) || el.closest('dialog, [role="dialog"], [role="listbox"]'))
+          && el.getClientRects().length && getComputedStyle(el).visibility === "visible")
+        .map(el => {
+          const tag = el.localName;
+          const id = el.id;
+          const name = el.getAttribute("name");
+          const labelledBy = el.getAttribute("aria-labelledby")?.trim().split(/\s+/)
+            .map(labelId => document.getElementById(labelId)?.textContent).join(" ").trim();
+          const label = labelledBy || el.getAttribute("aria-label")
+            || (el as HTMLInputElement).labels?.[0]?.textContent
+            || el.getAttribute("placeholder")
+            || el.innerText;
+          const namedSelector = name ? `${tag}[name=${CSS.escape(name)}]` : undefined;
+          return JSON.stringify({
+            tag,
+            type: el.getAttribute("type") ?? undefined,
+            role: el.getAttribute("role") ?? undefined,
+            label: label?.replace(/\s+/g, " ").trim().slice(0, 160),
+            selector: id ? `#${CSS.escape(id)}`
+              : namedSelector && document.querySelectorAll(namedSelector).length === 1 ? namedSelector : undefined,
+            disabled: el.matches(":disabled, [aria-disabled=true]") || undefined,
+          });
+        }).join("\n");
+    }
     const main =
       document.querySelector("main, article, .main-content, .page-content") ?? document.body;
     return (main as HTMLElement).innerText;
-  });
+  }, controls);
 
   const truncated = content.length > 8000 ? content.slice(0, 8000) + "\n[truncated]" : content;
   // Refresh authority before returning account-derived scraped content.

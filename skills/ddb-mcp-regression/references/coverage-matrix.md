@@ -383,7 +383,7 @@ Not applicable: not-found, ambiguous, locked, edition, source, homebrew, paginat
 Scenarios: normal
 Not applicable: invalid, not-found, ambiguous, locked, edition, source, homebrew, pagination, gate, logged-out
 
-- normal: after `ddb_navigate` → the current page's text, wrapped as untrusted.
+- normal: after `ddb_navigate` → the current page's text, wrapped as untrusted. With `controls: true`, inspect visible form labels, roles and selectors without changing the page.
 
 ## `ddb_interact`
 

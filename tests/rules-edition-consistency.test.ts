@@ -304,7 +304,7 @@ it("the rarity parameter says it matches exactly (carry-over t)", async () => {
 });
 
 it("the server instructions tell the client about the labels", async () => {
-  expect(client.getInstructions()).toBe(SERVER_INSTRUCTIONS);
+  expect(client.getInstructions()).toContain(SERVER_INSTRUCTIONS);
 });
 
 describe.each(["ddb", "open5e"] as const)("labels (%s path)", mode => {

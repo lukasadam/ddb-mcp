@@ -25,7 +25,10 @@ import { RULES_EDITION_TOOL_NOTE, CHARACTER_RULES_TOOL_NOTE, PARTY_RULES_TOOL_NO
 
 export const server = new McpServer(
   { name: "dndbeyond", version: "1.0.0" },
-  { instructions: SERVER_INSTRUCTIONS },
+  {
+    instructions: SERVER_INSTRUCTIONS +
+      "\nFor an authorized character build, open https://www.dndbeyond.com/characters/builder in Standard mode or resume the specified character. Use ddb_get_page with controls: true to identify form controls, then use ddb_interact to apply the user's choices. Complete class options and spells when applicable, background, species, languages, ability scores, and starting equipment. Open the sheet and verify it by character ID before reporting completion. The builder saves changes as you go. If a step fails, inspect the current draft before retrying so you do not create a duplicate.",
+  },
 );
 
 // ─── Tool annotations ─────────────────────────────────────────────────────────
@@ -547,13 +550,15 @@ server.tool(
 // ─── ddb_get_page ─────────────────────────────────────────────────────────────
 server.tool(
   "ddb_get_page",
-  "Return the text content of the currently loaded page in the browser. The browser stays open — call ddb_close_browser when finished.",
-  {},
+  "Return the current page's text, or inspect visible form controls and their selectors. This is useful for completing character builder fields with ddb_interact. The browser stays open — call ddb_close_browser when finished.",
+  {
+    controls: z.boolean().optional().describe("Return visible controls with labels, roles and selectors where available instead of page text."),
+  },
   READ_ONLY_NET,
-  async () => {
+  async ({ controls }) => {
     try {
       const context = await getSharedContext();
-      const content = await getCurrentPageContent(context);
+      const content = await getCurrentPageContent(context, controls);
       return { content: [{ type: "text", text: content }] };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

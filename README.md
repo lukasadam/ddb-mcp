@@ -226,11 +226,17 @@ In these searches, entries that aren't 2014 or 2024 content are tagged `[homebre
 | `ddb_search_site` | Search D&D Beyond by keyword across spells, monsters, items, races, classes, and feats. Defaults to 2024; set `rules_edition: "2014"` for the 2014 versions. Each result is tagged `[2024]` / `[2014]`. Across all categories the reply has one `Rules:` header and one last line counting the hidden other-edition versions. Takes no `source`; use the per-category search tools to pick a book. |
 | `ddb_navigate` | Navigate to any D&D Beyond URL and return its text content. Keeps the browser open for follow-up calls. |
 | `ddb_interact` | Click, fill (requires `confirm_fill: true`), or screenshot the currently loaded page. |
-| `ddb_get_page` | Return the text content of the currently loaded page. |
+| `ddb_get_page` | Return the current page's text. Use `controls: true` to inspect visible form controls, including labels and selectors where available. |
 | `ddb_close_browser` | Close the background browser window. Call this when done with `ddb_navigate`, `ddb_interact`, or `ddb_get_page`. |
 | `ddb_clear_cache` | Clear the server's in-memory caches so the next call re-fetches from D&D Beyond: `spells` (default; the reference compendium: spells, items, species, classes, backgrounds, feats, class features and racial traits), `characters`, `monsters` (stat blocks, the full monster list, the cached source list and the Open5e creature data), or `all` (everything, including the library list, campaigns and Open5e SRD data). Useful when results look like the SRD fallback right after logging in. |
 
 </details>
+
+### Create a character
+
+Ask your MCP client to create a character and give it the rules edition, name, class, species and background. Include any choices already made, or delegate those choices explicitly. The client uses the [Standard Character Builder](https://www.dndbeyond.com/characters/builder) and saves changes to the account as it goes.
+
+For each step, use `ddb_get_page` to read the available choices, or `ddb_get_page` with `controls: true` to find form controls. Use `ddb_interact` to choose options or fill fields. Complete the class features and spells that apply, species and background choices, languages, ability scores, and starting equipment. On **What's Next**, open the sheet and check it with `ddb_get_character` using the saved character ID. Resume that ID if interrupted.
 
 ---
 
