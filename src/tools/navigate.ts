@@ -101,14 +101,8 @@ export async function navigate(context: BrowserContext, url: string): Promise<st
 
   await page.goto(url, { waitUntil: "networkidle", timeout: 30000 });
 
-  // Extract page text content and convert to readable markdown-ish format
+  // Read the rendered text without removing controls used by later interactions.
   const content = await page.evaluate(() => {
-    // Remove scripts and styles
-    document.querySelectorAll("script, style, nav, footer, .ad-container, .advertisement").forEach((el) =>
-      el.remove()
-    );
-
-    // Try to get the main content area
     const main =
       document.querySelector("main, article, .main-content, .page-content, #content") ?? document.body;
 
@@ -209,7 +203,6 @@ export async function getCurrentPageContent(context: BrowserContext): Promise<st
     );
   }
   const content = await page.evaluate(() => {
-    document.querySelectorAll("script, style, nav, footer, .ad-container").forEach((el) => el.remove());
     const main =
       document.querySelector("main, article, .main-content, .page-content") ?? document.body;
     return (main as HTMLElement).innerText;

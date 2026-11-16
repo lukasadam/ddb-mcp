@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { isAllowedPageUrl, assertSafeSelector } from "../src/tools/navigate.js";
+import { isAllowedPageUrl, assertSafeSelector, navigate, getCurrentPageContent } from "../src/tools/navigate.js";
 
 // Stable fs mock so the transition tests below can flip the session file and
 // drive a REAL session-state transition through navigate()'s authority checks.
@@ -12,6 +12,31 @@ const fsMock = vi.hoisted(() => ({
   writeFileSync: vi.fn(),
 }));
 vi.mock("fs", () => fsMock);
+
+it.each(["navigate", "getCurrentPageContent"])("%s preserves the confirmation footer", async (read) => {
+  const removeFooter = vi.fn();
+  const main = {
+    get innerText() {
+      return removeFooter.mock.calls.length ? "Choose a species" : "Choose a species\nConfirm";
+    },
+  };
+  vi.stubGlobal("document", {
+    body: main,
+    querySelector: () => main,
+    querySelectorAll: (selector: string) => selector.includes("footer") ? [{ remove: removeFooter }] : [],
+  });
+  const url = "https://www.dndbeyond.com/characters/1/builder/species/choose";
+  const page = { url: () => url, goto: async () => {}, evaluate: async (readDom: () => string) => readDom() };
+  const context = { pages: () => [page], route: async () => {} } as unknown as Parameters<typeof navigate>[0];
+
+  try {
+    const result = read === "navigate" ? await navigate(context, url) : await getCurrentPageContent(context);
+    expect(result).toContain("Choose a species\nConfirm");
+    expect(removeFooter).not.toHaveBeenCalled();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
 
 describe("isAllowedPageUrl", () => {
   it("allows https URLs on www.dndbeyond.com", () => {
